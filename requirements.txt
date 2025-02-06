@@ -1,0 +1,4 @@
+mem0AI
+transformers
+openai
+
