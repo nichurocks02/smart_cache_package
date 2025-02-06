@@ -22,7 +22,7 @@ from typing import Optional, Dict, Any, List, Tuple, Callable
 
 from mem0 import Memory
 from transformers import pipeline
-from llm_caller import *
+from .llm_caller import *
 
 ###############################################
 # Global Zero-Shot Classifier Configuration
