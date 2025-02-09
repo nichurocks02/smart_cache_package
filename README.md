@@ -27,6 +27,10 @@ This package leverages:
 - **Supports multiple LLM providers:**
   - **OpenAI (Default):** Uses `OPENAI_API_KEY` from environment variables.
   - **Custom LLM:** Users can provide their own callable function.
+ 
+### 🔄 **Export & Import Cache Data (New Feature)**
+- Users can **export** their cache to a file and **import** it into another instance of SmartCache.
+- This feature enables **collaboration and 
 
 ### 🛠 **Debugging and Transparency**
 - `get_answer()` can return an **extra debug flag** indicating the **source of the answer**:
@@ -137,6 +141,18 @@ print("Negative feedback provided, answer removed from cache.")
 answer, source = smart_cache.get_answer(user_id, exact_question, return_debug=True)
 print(f"Re-asked after negative feedback - Source: {source}")  # Expected: "LLM Call"
 
+```
+
+### Export & Import Cached Data (New Feature)
+Exporting Cache to a JSON File:
+```python
+smart_cache.export_cache("cache_data.json")
+print("Cache exported successfully.")
+```
+Importing Cache from a JSON File:
+```python
+smart_cache.import_cache("cache_data.json")
+print("Cache imported successfully.")
 ```
 
 ### Using a Custom LLM (Instead of OpenAI)
