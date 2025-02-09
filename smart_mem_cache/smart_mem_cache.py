@@ -25,6 +25,8 @@ from transformers import pipeline
 from .llm_caller import *
 
 from transformers import GPT2Tokenizer
+from openai import OpenAI
+import datetime
 ###############################################
 # Global Zero-Shot Classifier Configuration
 ###############################################
@@ -32,17 +34,29 @@ CANDIDATE_LABELS = [
     "personal", "sports", "coding", "shopping", "math",
     "news", "career", "health", "general"
 ]
-zero_shot_clf = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
 
 def intelligent_categorize(text: str) -> str:
+    """
+    Uses OpenAI's API for zero-shot classification.
+    """
     if not text.strip():
         return "uncategorized"
-    result = zero_shot_clf(text, CANDIDATE_LABELS)
-    best_label = result["labels"][0]
-    best_score = result["scores"][0]
-    if best_score < 0.3:
-        return "uncategorized"
-    return best_label
+
+    client = OpenAI()
+    
+    response = client.chat.completions.create(
+
+        model="gpt-3.5-turbo",
+        messages=[
+            {"role": "system", "content": "You are a classifier. Assign the most relevant category."},
+            {"role": "user", "content": f"Classify this text into one of {CANDIDATE_LABELS}: {text}"}
+        ]
+    )
+
+    best_label = response.choices[0].message.content
+
+    return best_label if best_label in CANDIDATE_LABELS else "uncategorized"
+
 
 ###############################################
 # Helper Functions
