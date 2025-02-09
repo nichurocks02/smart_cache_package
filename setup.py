@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="smart_cache_package",
-    version="0.1.3",  # Bump the version
+    version="0.1.4",
     author="Nishkal Gupta M",
     author_email="nishkalrocks02@gmail.com",
     description="An intelligent caching and LLM routing package using Mem0AI and zero-shot classification.",
@@ -11,7 +11,7 @@ setup(
     url="https://github.com/nichurocks02/smart_cache_package.git",
     packages=find_packages(),
     install_requires=[
-        "mem0AI",  # Ensure this matches the actual package name
+        "mem0AI", 
         "transformers",
         "openai",
         "dateparser",

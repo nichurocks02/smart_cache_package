@@ -24,6 +24,7 @@ from mem0 import Memory
 from transformers import pipeline
 from .llm_caller import *
 
+from transformers import GPT2Tokenizer
 ###############################################
 # Global Zero-Shot Classifier Configuration
 ###############################################
@@ -55,7 +56,9 @@ def make_cache_key(user_id: str, query: str) -> str:
     return hashlib.md5(raw_key.encode("utf-8")).hexdigest()
 
 def approximate_tokens(text: str) -> int:
-    return len(text) // 4 + 1
+    tokenizer = GPT2Tokenizer.from_pretrained("gpt2")
+    num_input_tokens = len(tokenizer.encode(text))
+    return num_input_tokens
 
 def expand_query(text: str) -> List[str]:
     # For simplicity, we return just the original text.
