@@ -27,6 +27,10 @@ This package leverages:
 - **Supports multiple LLM providers:**
   - **OpenAI (Default):** Uses `OPENAI_API_KEY` from environment variables.
   - **Custom LLM:** Users can provide their own callable function.
+ 
+### 🔄 **Export & Import Cache Data (New Feature)**
+- Users can **export** their cache to a file and **import** it into another instance of SmartCache.
+- This feature enables **collaboration and 
 
 ### 🛠 **Debugging and Transparency**
 - `get_answer()` can return an **extra debug flag** indicating the **source of the answer**:
@@ -76,7 +80,7 @@ user_id = "alice"
 
 ### Store Initial Interactions
 Store a user’s conversation history for retrieval later.
-```
+```python
 smart_cache.store_interaction_auto_cat(
     user_id, 
     "Hi, I'm Alex. I like to play cricket on weekends.", 
@@ -94,7 +98,7 @@ print("Stored initial interactions.")
 
 ### Ask a New Question
 If an exact match or near-duplicate exists, it will reuse the previous answer. Otherwise, it calls the LLM.
-```
+```python
 new_question = "What does Alex do for fun on Saturday?"
 answer, source = smart_cache.get_answer(user_id, new_question, return_debug=True)
 
@@ -105,7 +109,7 @@ print(f"Source: {source}")  # Could be "Local Cache", "Mem0 Near-Duplicate", or 
 
 ### Ask an Exact Match Question
 If a user repeats a previously asked query, it should return from cache.
-```
+```python
 exact_question = "Does Alex like to play cricket on weekends?"
 
 # First call (expected LLM call)
@@ -120,7 +124,7 @@ print(f"Second Call - Source: {source2}")  # Expected: "Local Cache"
 ### Force Refresh to Bypass Cache
 If you need to force a fresh answer from LLM, use force_refresh=True.
 
-```
+```python
 forced_question = "Any weekend hobbies for Alex?"
 answer, source = smart_cache.get_answer(user_id, forced_question, force_refresh=True, return_debug=True)
 
@@ -129,7 +133,7 @@ print(f"Forced Refresh - Source: {source}")  # Expected: "LLM Call"
 ```
 
 ### Provide Negative Feedback (Remove Cached Answer)
-```
+```python
 smart_cache.user_feedback(user_id, exact_question, helpful=False)
 print("Negative feedback provided, answer removed from cache.")
 
@@ -139,9 +143,21 @@ print(f"Re-asked after negative feedback - Source: {source}")  # Expected: "LLM 
 
 ```
 
+### Export & Import Cached Data (New Feature)
+Exporting Cache to a JSON File:
+```python
+smart_cache.export_cache("cache_data.json")
+print("Cache exported successfully.")
+```
+Importing Cache from a JSON File:
+```python
+smart_cache.import_cache("cache_data.json")
+print("Cache imported successfully.")
+```
+
 ### Using a Custom LLM (Instead of OpenAI)
 If you want to use a custom LLM (e.g., a self-hosted model), provide a callable function.
-```
+```python
 def custom_llm(prompt: str) -> str:
     return f"[Custom LLM response for: {prompt[:50]}...]"
 
@@ -158,8 +174,9 @@ smart_cache = SmartCache(
 
 ### Environment Variables (Required for OpenAI & Anthropic)
 If you use OpenAI or Anthropic, ensure the API keys are set as environment variables.
-```
+```bash
 export OPENAI_API_KEY="your-openai-api-key"
 export ANTHROPIC_API_KEY="your-anthropic-api-key"
 ```
 ### 🚀 Enjoy smart caching and optimized LLM interactions! 🚀
+

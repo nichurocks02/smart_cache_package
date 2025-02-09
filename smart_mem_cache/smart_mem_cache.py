@@ -72,17 +72,17 @@ class SmartCache:
         similarity_threshold_reuse: float = 0.75,
         similarity_threshold_context: float = 0.4,
         max_context_tokens: int = 4096,
-        ttl_seconds: Optional[int] = 1800,  # Default TTL is 30 minutes.
+        ttl_seconds: Optional[int] = 1800,
         debug: bool = False,
-        llm_name: str = "openai",  # Options: "openai", "anthropic", "custom"
+        llm_name: str = "openai",
         custom_llm_callable: Optional[Callable[[str], str]] = None
     ):
         """
         Initialize the SmartCache.
-        
+
         :param llm_name: Which LLM to use ("openai", "anthropic", or "custom").
         :param custom_llm_callable: If llm_name is "custom", this callable will be used.
-        For "openai" or "anthropic", the corresponding API key must be set in the environment.
+               For "openai" or "anthropic", the corresponding API key must be set in the environment.
         """
         self.memory = memory or Memory()
         self.sim_threshold_reuse = similarity_threshold_reuse
@@ -92,7 +92,6 @@ class SmartCache:
         self.cached_responses: Dict[str, Dict[str, Any]] = {}
         self.debug = debug
 
-        # Select the LLM callable based on llm_name.
         self.llm_callable = get_llm_callable(llm_name, custom_llm_callable)
 
     def get_answer(
@@ -104,19 +103,19 @@ class SmartCache:
     ) -> Tuple[str, Optional[str]]:
         """
         Retrieve an answer for the user query.
-        
+
         Workflow:
           1. Check local cache.
           2. If not found, check Mem0 for a near-duplicate.
           3. If still not found (or force_refresh is True), build context and call the LLM.
           4. Store the new answer.
-          
+
         :param return_debug: If True, returns a tuple (answer, source) where source is one of:
                              "Local Cache", "Mem0 Near-Duplicate", or "LLM Call".
         """
         source = None
         cache_key = make_cache_key(user_id, user_query)
-        
+
         # 1. Local Cache Check
         if not force_refresh:
             cached_answer = self.check_local_cache(cache_key)
@@ -125,7 +124,7 @@ class SmartCache:
                 if self.debug:
                     print(f"DEBUG: Local cache hit for key {cache_key}.")
                 return (cached_answer, source) if return_debug else (cached_answer, None)
-        
+
         # 2. Check Mem0 for a near-duplicate answer
         if not force_refresh:
             near_dup_answer = self.check_mem0_near_duplicate(user_id, user_query)
@@ -135,7 +134,7 @@ class SmartCache:
                     print(f"DEBUG: Near-duplicate found in Mem0 for query '{user_query}'.")
                 self.update_local_cache(cache_key, near_dup_answer)
                 return (near_dup_answer, source) if return_debug else (near_dup_answer, None)
-        
+
         # 3. Build Context and call LLM
         source = "LLM Call"
         context_block = self.build_context(user_id, user_query)
@@ -183,6 +182,10 @@ class SmartCache:
         return None
 
     def build_context(self, user_id: str, new_query: str, top_k: int = 5) -> str:
+        """
+        Builds a context block from past interactions.
+        (Time-based filtering has been removed. All memories are considered.)
+        """
         query_category = intelligent_categorize(new_query)
         if self.debug:
             print(f"DEBUG: Query '{new_query}' categorized as '{query_category}'.")
@@ -193,12 +196,10 @@ class SmartCache:
             hits = self.memory.search(query=variant, user_id=user_id)
             hits = hits[:top_k]
             for h in hits:
-                # Safely skip None or non-dict results
                 if not h or not isinstance(h, dict):
                     continue
-
-                # 'metadata' might be missing or None, so handle that
-                cat = (h.get("metadata") or {}).get("category", "none")
+                metadata = h.get("metadata") or {}
+                cat = metadata.get("category", "none")
                 base_score = h.get("score", 0.0)
                 boosted_score = base_score + (0.15 if cat == query_category else 0.0)
                 all_hits.append((boosted_score, h))
@@ -211,7 +212,7 @@ class SmartCache:
         context_snippets = []
         tokens_used = 0
         for record in relevant:
-            snippet = record["memory"]  # We assume 'memory' is a string
+            snippet = record["memory"]
             snippet_tokens = approximate_tokens(snippet)
             if tokens_used + snippet_tokens > self.max_context_tokens:
                 break
@@ -226,16 +227,18 @@ class SmartCache:
     def store_interaction_auto_cat(self, user_id: str, user_query: str, assistant_answer: str):
         """
         Automatically categorizes the user query using zero-shot classification, then stores the
-        Q&A pair in Mem0 with the category as metadata. Following the GitHub suggestion, after adding
-        the memory, we update it with a string payload to avoid a 'NoneType' payload error.
+        Q&A pair in Mem0 with the category and timestamp as metadata.
+        Following the GitHub suggestion, after adding the memory, we update it with a string payload
+        to avoid a 'NoneType' payload error.
         """
-        category = intelligent_categorize(user_query)
+        query_category = intelligent_categorize(user_query)
         messages = [
             {"role": "user", "content": user_query},
             {"role": "assistant", "content": assistant_answer},
         ]
+        timestamp = datetime.datetime.utcnow().isoformat()
         payload_str = f"User Query: {user_query}\nAssistant Answer: {assistant_answer}"
-        metadata = {"category": category}
+        metadata = {"category": query_category, "timestamp": timestamp}
         try:
             result = self.memory.add(messages, user_id=user_id, metadata=metadata)
             if result and len(result) > 0:
@@ -245,7 +248,7 @@ class SmartCache:
             if self.debug:
                 print(f"DEBUG: Error storing interaction: {e}")
         if self.debug:
-            print(f"DEBUG: Stored interaction for query '{user_query}' with category '{category}'.")
+            print(f"DEBUG: Stored interaction for query '{user_query}' with category '{query_category}' and timestamp '{timestamp}'.")
 
     def user_feedback(self, user_id: str, query: str, helpful: bool):
         if not helpful:
@@ -260,3 +263,9 @@ class SmartCache:
         self.cached_responses.clear()
         if self.debug:
             print("DEBUG: Reset all Mem0 storage and local cache.")
+
+    def export_cache(self) -> Dict[str, Dict[str, Any]]:
+        """
+        Export the current local cache as a dictionary.
+        """
+        return self.cached_responses
