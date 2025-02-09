@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="smart_cache_package",
-    version="0.1.4",
+    version="0.1.5",
     author="Nishkal Gupta M",
     author_email="nishkalrocks02@gmail.com",
     description="An intelligent caching and LLM routing package using Mem0AI and zero-shot classification.",
